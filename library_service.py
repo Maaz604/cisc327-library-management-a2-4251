@@ -107,7 +107,20 @@ def return_book_by_patron(patron_id: str, book_id: int) -> Tuple[bool, str]:
     
     TODO: Implement R4 as per requirements
     """
-    return False, "Book return functionality is not yet implemented."
+    book = get_book_by_id(book_id)
+    if not book:
+        return False, "Book not found."
+
+    success = update_book_availability(book_id, 1)
+    if not success:
+        return False, "Error occurred while updating book availability."
+
+    record_success = update_borrow_record_return_date(patron_id, book_id, datetime.now())
+    if not record_success:
+        return False, "Error occurred while updating return record."
+
+    return True, f'Book "{book["title"]}" has been successfully returned.'
+
 
 def calculate_late_fee_for_book(patron_id: str, book_id: int) -> Dict:
     """
@@ -115,7 +128,7 @@ def calculate_late_fee_for_book(patron_id: str, book_id: int) -> Dict:
     
     TODO: Implement R5 as per requirements 
     
-    
+
     return { // return the calculated values
         'fee_amount': 0.00,
         'days_overdue': 0,
@@ -123,12 +136,40 @@ def calculate_late_fee_for_book(patron_id: str, book_id: int) -> Dict:
     }
     """
 
+    record = update_borrow_record_return_date(patron_id, book_id, None)
+    if not record or not record.get('due_date'):
+        return {'fee_amount': 0.00, 'days_overdue': 0, 'status': 'Borrow record not found'}
+
+    duedate = record['due_date']
+    return_date = record.get('return_date', datetime.now())
+    days_overdue = (return_date - duedate).days
+
+    if days_overdue <= 0:
+        return {'fee_amount': 0.00, 'days_overdue': 0, 'status': 'No late fee'}
+
+    amount = round(days_overdue * 0.50, 2)
+    return {'fee_amount': amount, 'days_overdue': days_overdue, 'status': 'Late fee applied'}
+
 def search_books_in_catalog(search_term: str, search_type: str) -> List[Dict]:
     """
     Search for books in the catalog.
     
     TODO: Implement R6 as per requirements
     """
+
+    books = get_all_books()
+    terms = search_term.strip().lower()
+    results = []
+
+    for book in books:
+        if search_type == "title" and terms in book["title"].lower():
+            results.append(book)
+        elif search_type == "author" and terms in book["author"].lower():
+            results.append(book)
+        elif search_type == "isbn" and terms in book["isbn"].lower():
+            results.append(book)
+
+    return results
     
     return []
 
@@ -138,4 +179,21 @@ def get_patron_status_report(patron_id: str) -> Dict:
     
     TODO: Implement R7 as per requirements
     """
-    return {}
+    count = get_patron_borrow_count(patron_id)
+    books = get_all_books()
+    borrowedbooks = [b for b in books if b.get("borrowed_by") == patron_id]
+
+    late_fees = []
+    total_fees = 0.0
+    for b in borrowedbooks:
+        fee_data = calculate_late_fee_for_book(patron_id, b["id"])
+        late_fees.append({"title": b["title"], "fee": fee_data["fee_amount"]})
+        total_fees += fee_data["fee_amount"]
+
+    return {
+        "patron id": patron_id,
+        "borrowed_books": borrowedbooks,
+        "count": count,
+        "late fees": late_fees,
+        "total fees": round(total_fees, 2)
+    }
