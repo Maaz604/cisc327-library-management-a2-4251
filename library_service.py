@@ -1,9 +1,14 @@
+"""
+Library Service Module - Business Logic Functions
+Contains all the core business logic for the Library Management System
+"""
+
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple
 from database import (
     get_book_by_id, get_book_by_isbn, get_patron_borrow_count,
     insert_book, insert_borrow_record, update_book_availability,
-    update_borrow_record_return_date, get_all_books, get_patron_borrowed_books
+    update_borrow_record_return_date, get_all_books
 )
 
 def add_book_to_catalog(title: str, author: str, isbn: str, total_copies: int) -> Tuple[bool, str]:
@@ -63,29 +68,25 @@ def return_book_by_patron(patron_id: str, book_id: int) -> Tuple[bool, str]:
     if not book:
         return False, "Book DNE"
 
-    borrowed_books = get_patron_borrowed_books(patron_id)
-    if not any(b['book_id'] == book_id for b in borrowed_books):
-        return False, "Not borrowed"
-
     record_success = update_borrow_record_return_date(patron_id, book_id, datetime.now())
     if not record_success:
-        return False, "Database error while updating return"
+        return False, "Not borrowed"
 
     update_book_availability(book_id, 1)
     return True, f'Book "{book["title"]}" has been successfully returned.'
 
 def calculate_late_fee_for_book(patron_id: str, book_id: int) -> Dict:
-    borrowed_books = get_patron_borrowed_books(patron_id)
-    book_record = next((b for b in borrowed_books if b['book_id'] == book_id), None)
-    if not book_record:
-        return {'amount': 0.00, 'days_overdue': 0, 'status': 'Invalid'}
+    record = update_borrow_record_return_date(patron_id, book_id, None)
+    if not record or not record.get('due_date'):
+        return {'fee_amount': 0.00, 'days_overdue': 0, 'status': 'Invalid'}
 
-    due_date = book_record['due_date']
-    return_date = datetime.now()
-    days_overdue = max((return_date - due_date).days, 0)
-    amount = round(days_overdue * 0.50, 2) if days_overdue > 0 else 0
+    duedate = record['due_date']
+    return_date = record.get('return_date', datetime.now())
+    days_overdue = max((return_date - duedate).days, 0)
+    fee_amount = round(days_overdue * 0.50, 2) if days_overdue > 0 else 0
     status = "Late fee applied" if days_overdue > 0 else "No late fee"
-    return {'amount': amount, 'days_overdue': days_overdue, 'status': status}
+
+    return {'fee_amount': fee_amount, 'days_overdue': days_overdue, 'status': status}
 
 def search_books_in_catalog(search_term: str, search_type: str) -> List[Dict]:
     books = get_all_books()
@@ -101,19 +102,20 @@ def search_books_in_catalog(search_term: str, search_type: str) -> List[Dict]:
     return results
 
 def get_patron_status_report(patron_id: str) -> Dict:
-    borrowedbooks = get_patron_borrowed_books(patron_id)
-    count = len(borrowedbooks)
+    count = get_patron_borrow_count(patron_id)
+    books = get_all_books()
+    borrowedbooks = [b for b in books if b.get("borrowed_by") == patron_id]
     late_fees = []
     total_fees = 0.0
     for b in borrowedbooks:
-        fee_data = calculate_late_fee_for_book(patron_id, b["book_id"])
-        late_fees.append({"title": b["title"], "fee": fee_data["amount"]})
-        total_fees += fee_data["amount"]
+        fee_data = calculate_late_fee_for_book(patron_id, b["id"])
+        late_fees.append({"title": b["title"], "fee": fee_data["fee_amount"]})
+        total_fees += fee_data["fee_amount"]
 
     return {
         "patron id": patron_id,
         "borrowed_books": borrowedbooks,
-        "total_borrowed": count,
+        "count": count,
         "late fees": late_fees,
         "total fees": round(total_fees, 2)
     }

@@ -21,8 +21,7 @@ def test_search_by_author():
         assert b['author'].lower() == "author"
 
 def test_search_by_isbn():
-    book = get_book_by_isbn("1111111111111")
-    results = search_books_in_catalog(book['isbn'], "isbn")
+    results = search_books_in_catalog("1111111111111", "isbn")
     assert len(results) == 1
     assert results[0]['title'] == "Search Book 1"
 

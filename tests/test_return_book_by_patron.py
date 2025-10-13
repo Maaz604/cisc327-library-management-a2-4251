@@ -5,7 +5,7 @@ from database import init_database, get_book_by_isbn
 def setup_module(module):
     init_database()
     add_book_to_catalog("Return Book", "Author", "1111111111111", 2)
-    add_book_to_catalog("Extra Book", "Author", "2222222222222", 1)  # For not-borrowed test
+    add_book_to_catalog("Extra Book", "Author", "2222222222222", 1)
     book = get_book_by_isbn("1111111111111")
     borrow_book_by_patron("123456", book["id"])
 
@@ -30,4 +30,4 @@ def test_return_invalid_id():
 def test_return_dne_book():
     ok, msg = return_book_by_patron("123456", 999)
     assert not ok
-    assert "Book DNE" in msg.lower()
+    assert "dne" in msg.lower()
