@@ -1,24 +1,29 @@
 import pytest
 from library_service import return_book_by_patron, borrow_book_by_patron, add_book_to_catalog
-from database import init_database
+from database import init_database, get_book_by_isbn
 
 def setup_module(module):
     init_database()
     add_book_to_catalog("Return Book", "Author", "1111111111111", 2)
-    borrow_book_by_patron("123456", 1)
+    add_book_to_catalog("Extra Book", "Author", "2222222222222", 1)  # For not-borrowed test
+    book = get_book_by_isbn("1111111111111")
+    borrow_book_by_patron("123456", book["id"])
 
 def test_return_valid_book():
-    ok, msg = return_book_by_patron("123456", 1)
+    book = get_book_by_isbn("1111111111111")
+    ok, msg = return_book_by_patron("123456", book["id"])
     assert ok
     assert "returned" in msg.lower()
 
 def test_return_not_borrowed():
-    ok, msg = return_book_by_patron("123456", 2)
+    book = get_book_by_isbn("2222222222222")
+    ok, msg = return_book_by_patron("123456", book["id"])
     assert not ok
-    assert "ot borrowed" in msg.lower()
+    assert "not borrowed" in msg.lower()
 
 def test_return_invalid_id():
-    ok, msg = return_book_by_patron("abb123", 1)
+    book = get_book_by_isbn("1111111111111")
+    ok, msg = return_book_by_patron("abb123", book["id"])
     assert not ok
     assert "invalid id" in msg.lower()
 

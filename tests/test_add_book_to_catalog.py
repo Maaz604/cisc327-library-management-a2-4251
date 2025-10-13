@@ -1,5 +1,10 @@
 import pytest
 from library_service import add_book_to_catalog
+from database import init_database, add_sample_data
+
+def setup_module(module):
+    init_database()
+    add_sample_data()
 
 def test_add_valid_book():
     ok, msg = add_book_to_catalog("My Book", "Author", "1234567890123", 5)
