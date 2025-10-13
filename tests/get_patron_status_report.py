@@ -5,9 +5,9 @@ from database import init_database, add_sample_data, get_book_by_isbn
 def setup_function():
     init_database()
     add_sample_data()
-    add_book_to_catalog("Status Book 1", "Author", "1111111111111", 2)
-    add_book_to_catalog("Status Book 2", "Author", "2222222222222", 1)
-    book1 = get_book_by_isbn("1111111111111")
+    add_book_to_catalog("Status Book 1", "Author", "5555555555555", 2)
+    add_book_to_catalog("Status Book 2", "Author", "5555555555556", 1)
+    book1 = get_book_by_isbn("5555555555555")
     if book1:
         borrow_book_by_patron("123456", book1['id'])
 
