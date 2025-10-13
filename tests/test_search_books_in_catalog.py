@@ -2,7 +2,7 @@ import pytest
 from library_service import search_books_in_catalog, add_book_to_catalog
 from database import init_database, get_book_by_isbn
 
-def setup_module(module):
+def setup_function(module):
     init_database()
     add_book_to_catalog("Search Book 1", "Author", "1111111111111", 2)
     add_book_to_catalog("Search Book 2", "Author", "2222222222222", 1)

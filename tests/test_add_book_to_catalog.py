@@ -2,7 +2,7 @@ import pytest
 from library_service import add_book_to_catalog
 from database import init_database, add_sample_data
 
-def setup_module(module):
+def setup_function(module):
     init_database()
     add_sample_data()
 
@@ -26,3 +26,4 @@ def test_add_book_bad_isbn():
     ok, msg = add_book_to_catalog("My Book", "Author", "123456", 5)
     assert not ok
     assert "13 digits" in msg.lower()
+

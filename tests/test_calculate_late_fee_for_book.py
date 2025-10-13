@@ -2,7 +2,7 @@ import pytest
 from library_service import calculate_late_fee_for_book, borrow_book_by_patron, add_book_to_catalog
 from database import init_database, get_book_by_isbn
 
-def setup_module(module):
+def setup_function(module):
     init_database()
     add_book_to_catalog("Late Book", "Author", "1111111111111", 2)
     book = get_book_by_isbn("1111111111111")
@@ -30,3 +30,4 @@ def test_late_fee_invalid_book():
     fee = calculate_late_fee_for_book("123456", 999)
     assert fee['amount'] == 0
     assert "invalid" in fee.get('status', '').lower()
+
