@@ -2,7 +2,7 @@ import pytest
 from library_service import get_patron_status_report, borrow_book_by_patron, add_book_to_catalog
 from database import init_database, add_sample_data, get_book_by_isbn
 
-def setup_function(module):
+def setup_function():
     init_database()
     add_sample_data()
     add_book_to_catalog("Status Book 1", "Author", "1111111111111", 2)
@@ -31,4 +31,3 @@ def test_patron_total_books():
     status = get_patron_status_report("123456")
     assert 'borrowed_books' in status
     assert status.get('total_borrowed', len(status['borrowed_books'])) == len(status['borrowed_books'])
-
